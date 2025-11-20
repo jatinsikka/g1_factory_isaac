@@ -1,0 +1,39 @@
+# Ray Job Configuration for G1 Factory Project
+# This file contains settings for running jobs on the Ray cluster
+
+# File containing environment variables (e.g. W&B credentials)
+# : Create .env.ray file with W&B API key and credentials
+# e.g. /path/to/g1_factory_isaac/scripts/local_ray/.env.ray
+env_file: /mnt/c/Users/sikka/Documents/2025_IMP/Courses/Fall_25/HCR/HW4/Project/g1_factory_isaac/scripts/local_ray/.env.ray
+
+# UT EID (for tracking ownership of Ray jobs)
+# : Replace with your UT EID
+user_id: js233274
+
+# Working directory during job, should contain your scripts
+# e.g. /path/to/g1_factory_isaac/scripts
+ext_dir: /mnt/c/Users/sikka/Documents/2025_IMP/Courses/Fall_25/HCR/HW4/Project/g1_factory_isaac/scripts
+
+# Train script to execute on cluster
+# : Update path after implementing train.py
+python_script: "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/g1_factory/scripts/train.py"
+
+# Additional dependencies to mount at runtime
+# : Update file_mounts with correct paths to g1_factory and robot_rl
+file_mounts: {
+  "/mnt/c/Users/sikka/Documents/2025_IMP/Courses/Fall_25/HCR/HW4/Project/g1_factory_isaac": "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/g1_factory",
+  "/mnt/c/Users/sikka/Documents/2025_IMP/Courses/Fall_25/HCR/HW4/robot_rl-main/robot_rl": "/workspace/isaaclab/source/robot_rl"
+}
+
+# Commands to execute after mounting runtime dependencies but before installation
+run_start_commands: []
+
+# python executable on the cluster
+"py_executable": "/workspace/isaaclab/isaaclab.sh -p"
+
+# patterns to exclude when copying dependencies (file_mounts) and working directory (ext_dir)
+"excludes":
+  - "**/wandb/**"
+  - "**/logs/**"
+  - "**/.git/objects/**"
+  - "**/.venv/**"

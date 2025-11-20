@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "g1_factory_isaac"
+version = "0.1.0"
+description = "G1 humanoid factory manipulation environment for Isaac Lab"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "BSD-3-Clause"}
+
+dependencies = [
+    "isaaclab>=2.1.0",
+    "robot_rl>=1.0.0",
+    "ray>=2.50.0",
+    "wandb>=0.15.0",
+    "torch>=2.0.0",
+    "numpy>=1.23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=22.0.0",
+    "isort>=5.0.0",
+    "flake8>=4.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["g1_factory_isaac*"]
