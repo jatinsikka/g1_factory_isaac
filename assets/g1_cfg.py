@@ -11,7 +11,7 @@ References:
 """
 
 from pathlib import Path
-from isaaclab.assets import ArticulationCfg
+from isaaclab.assets import ArticulationCfg, RigidBodyCfg
 from isaaclab.actuators import ImplicitActuatorCfg
 import isaaclab.sim as sim_utils
 from isaaclab.utils import configclass
@@ -90,9 +90,9 @@ G1_GRIPPER_CFG = ArticulationCfg(
 ##
 
 # Simple cubic object for testing
-CUBE_CFG = ArticulationCfg(
+CUBE_CFG = RigidBodyCfg(
     prim_path="{ENV_REGEX_NS}/cube",
-    spawn=sim_utils.CubeCfg(
+    spawn=sim_utils.BoxCfg(
         size=(0.05, 0.05, 0.05),
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -115,8 +115,8 @@ CUBE_CFG = ArticulationCfg(
             opacity=1.0,
         ),
     ),
-    init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.3, 0.0, 1.1),  # Near robot on table
+    init_state=RigidBodyCfg.InitialStateCfg(
+        pos=(0.3, 0.0, 0.6),  # Near robot on table
     ),
 )
 
@@ -126,9 +126,9 @@ CUBE_CFG = ArticulationCfg(
 ##
 
 # Factory workbench/table
-TABLE_CFG = ArticulationCfg(
+TABLE_CFG = RigidBodyCfg(
     prim_path="{ENV_REGEX_NS}/table",
-    spawn=sim_utils.CubeCfg(
+    spawn=sim_utils.BoxCfg(
         size=(1.0, 1.0, 0.1),  # 1m x 1m x 0.1m table
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
@@ -148,7 +148,7 @@ TABLE_CFG = ArticulationCfg(
             opacity=1.0,
         ),
     ),
-    init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.5),  # Table height ~0.5m
+    init_state=RigidBodyCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 0.05),  # Table height at 0.05m (0.1/2)
     ),
 )
