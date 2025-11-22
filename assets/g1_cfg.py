@@ -10,15 +10,16 @@ References:
     https://github.com/unitreerobotics/unitree_sim_isaaclab
 """
 
-from pathlib import Path
-from isaaclab.assets import ArticulationCfg, RigidBodyCfg
+import os
+from isaaclab.assets import ArticulationCfg
 from isaaclab.actuators import ImplicitActuatorCfg
 import isaaclab.sim as sim_utils
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
-# Get the directory of this file to locate assets
-ASSETS_DIR = Path(__file__).parent
+# Get the absolute path to the assets directory using __file__
+ASSETS_DIR = os.path.abspath(os.path.dirname(__file__))
+EXT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
 ##
 # G1 Robot Configuration
@@ -27,13 +28,21 @@ ASSETS_DIR = Path(__file__).parent
 G1_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/robot",
     spawn=sim_utils.UrdfFileCfg(
-        asset_path=str(ASSETS_DIR / "g1.urdf"),
+        asset_path=os.path.join(ASSETS_DIR, "g1.urdf"),
         fix_base=False,
         merge_fixed_joints=False,
         make_instanceable=True,
         link_density=1.0e-8,
         activate_contact_sensors=True,
         self_collision=True,
+        joint_drive=sim_utils.UrdfConverterCfg.JointDriveCfg(
+            drive_type="force",
+            target_type="position",
+            gains=sim_utils.UrdfConverterCfg.JointDriveCfg.PDGainsCfg(
+                stiffness=10.0,
+                damping=1.0,
+            ),
+        ),
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
             disable_gravity=False,
             retain_accelerations=False,
@@ -82,6 +91,16 @@ G1_GRIPPER_CFG = ArticulationCfg(
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.0),  # Attached to robot end-effector
     ),
+    actuators={
+        "default": ImplicitActuatorCfg(
+            joint_names_expr=[".*"],
+            effort_limit_sim=50.0,
+            velocity_limit_sim=2.0,
+            stiffness=5.0,
+            damping=0.5,
+            armature=0.005,
+        ),
+    },
 )
 
 
@@ -89,66 +108,15 @@ G1_GRIPPER_CFG = ArticulationCfg(
 # Factory Objects (Manipulable items)
 ##
 
-# Simple cubic object for testing
-CUBE_CFG = RigidBodyCfg(
-    prim_path="{ENV_REGEX_NS}/cube",
-    spawn=sim_utils.BoxCfg(
-        size=(0.05, 0.05, 0.05),
-        rigid_props=sim_utils.RigidBodyPropertiesCfg(
-            disable_gravity=False,
-            retain_accelerations=False,
-            linear_damping=0.04,
-            angular_damping=0.04,
-            max_linear_velocity=1000.0,
-            max_angular_velocity=1000.0,
-        ),
-        mass_props=sim_utils.MassPropertiesCfg(mass=0.5),
-        material_props=sim_utils.RigidBodyMaterialPropertiesCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=0.8,
-            dynamic_friction=0.6,
-            restitution=0.0,
-        ),
-        visual_material=sim_utils.PreviewSurfaceCfg(
-            diffuse_color=(0.2, 0.2, 0.8),  # Blue
-            opacity=1.0,
-        ),
-    ),
-    init_state=RigidBodyCfg.InitialStateCfg(
-        pos=(0.3, 0.0, 0.6),  # Near robot on table
-    ),
-)
+# Placeholder cube object - will be added later
+CUBE_CFG = None
+"""Configuration placeholder for cube object."""
 
 
 ##
 # Factory Environment Elements
 ##
 
-# Factory workbench/table
-TABLE_CFG = RigidBodyCfg(
-    prim_path="{ENV_REGEX_NS}/table",
-    spawn=sim_utils.BoxCfg(
-        size=(1.0, 1.0, 0.1),  # 1m x 1m x 0.1m table
-        rigid_props=sim_utils.RigidBodyPropertiesCfg(
-            disable_gravity=False,
-            enable_gyroscopic_forces=True,
-            sleep_threshold=0.005,
-        ),
-        mass_props=sim_utils.MassPropertiesCfg(mass=50.0),  # Heavy table
-        material_props=sim_utils.RigidBodyMaterialPropertiesCfg(
-            friction_combine_mode="multiply",
-            restitution_combine_mode="multiply",
-            static_friction=0.8,
-            dynamic_friction=0.6,
-            restitution=0.0,
-        ),
-        visual_material=sim_utils.PreviewSurfaceCfg(
-            diffuse_color=(0.7, 0.7, 0.7),  # Gray
-            opacity=1.0,
-        ),
-    ),
-    init_state=RigidBodyCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 0.05),  # Table height at 0.05m (0.1/2)
-    ),
-)
+# Placeholder table - will be added later
+TABLE_CFG = None
+"""Configuration placeholder for table."""

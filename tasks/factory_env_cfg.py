@@ -9,7 +9,7 @@ from isaaclab.envs.common import ViewerCfg
 import isaaclab.sim as sim_utils
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.managers import ActionTermCfg as ActionTerm
+import isaaclab.envs.mdp as mdp_isaac
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.managers import EventTermCfg as EventTerm
 from isaaclab.managers import ObservationGroupCfg as ObsGroup
@@ -23,7 +23,7 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
 
 # Import G1 robot configuration
-from ..assets import G1_CFG, G1_GRIPPER_CFG, CUBE_CFG, TABLE_CFG
+from ..assets import G1_CFG, G1_GRIPPER_CFG
 
 # Import MDP definitions
 from .. import mdp
@@ -44,17 +44,14 @@ class SceneCfg(InteractiveSceneCfg):
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -1.05)),
     )
 
-    # Factory table/workbench
-    table = TABLE_CFG
-
     # G1 robot
     robot = G1_CFG
 
-    # Gripper attached to robot
-    gripper = G1_GRIPPER_CFG
+    # Gripper attached to robot - commented out for now due to asset loading issues
+    # gripper = G1_GRIPPER_CFG
 
-    # Factory objects (parts to manipulate)
-    cube = CUBE_CFG
+    # Factory objects (parts to manipulate) - TODO: Add later
+    # cube = CUBE_CFG
 
     # TODO: Add more objects as needed
     # cube_2 = CUBE_CFG
@@ -83,22 +80,13 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    # Arm actions (joint velocity control for both arms)
-    arm_action: ActionTerm = ActionTerm(
+    # Joint position actions for robot arm and shoulder joints
+    # G1 has: left/right shoulder pitch/roll/yaw, left/right elbow, left/right wrist
+    arm_action = mdp_isaac.JointPositionActionCfg(
         asset_name="robot",
-        joint_names=[".*_shoulder.*", ".*_elbow.*", ".*_wrist.*"],
-        action_type="p_abs",  # Absolute position control
-        action_range=(-1.0, 1.0),
-        interpolate_scale=(0.1,),  # Smooth interpolation
-    )
-
-    # Gripper actions (open/close control)
-    gripper_action: ActionTerm = ActionTerm(
-        asset_name="gripper",
-        joint_names=[".*gripper.*"],
-        action_type="p_abs",
-        action_range=(-1.0, 1.0),
-        interpolate_scale=(0.05,),
+        joint_names=[".*_shoulder_pitch_joint", ".*_shoulder_roll_joint", ".*_shoulder_yaw_joint", 
+                     ".*_elbow_joint", ".*_wrist_roll_joint"],
+        scale=1.0,
     )
 
 
@@ -110,34 +98,46 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # Robot joint states (positions and velocities for all 29 DOFs)
-        joint_states = ObsTerm(
-            func=mdp.get_robot_body_joint_states,
+        # Robot joint positions (relative)
+        joint_pos = ObsTerm(
+            func=mdp_isaac.joint_pos_rel,
+            noise=Unoise(n_min=-0.01, n_max=0.01),
+        )
+        
+        # Robot joint velocities (relative)
+        joint_vel = ObsTerm(
+            func=mdp_isaac.joint_vel_rel,
             noise=Unoise(n_min=-0.01, n_max=0.01),
         )
 
-        # Gripper state (positions and velocities for all gripper joints)
-        gripper_state = ObsTerm(
-            func=mdp.get_gripper_state,
-            noise=Unoise(n_min=-0.01, n_max=0.01),
+        # Base linear velocity
+        base_lin_vel = ObsTerm(
+            func=mdp_isaac.base_lin_vel,
+            noise=Unoise(n_min=-0.1, n_max=0.1),
         )
 
-        # Object position relative to gripper
-        object_relative_pos = ObsTerm(
-            func=mdp.get_object_relative_position,
-            noise=Unoise(n_min=-0.001, n_max=0.001),
+        # Base angular velocity
+        base_ang_vel = ObsTerm(
+            func=mdp_isaac.base_ang_vel,
+            noise=Unoise(n_min=-0.1, n_max=0.1),
         )
 
-        # Object linear velocity
-        object_velocity = ObsTerm(
-            func=mdp.get_object_linear_velocity,
-            noise=Unoise(n_min=-0.001, n_max=0.001),
-        )
+        # Object position relative to gripper - commented out
+        # object_relative_pos = ObsTerm(
+        #     func=mdp.get_object_relative_position,
+        #     noise=Unoise(n_min=-0.001, n_max=0.001),
+        # )
 
-        # Target position for cube placement
-        target_position = ObsTerm(
-            func=mdp.get_target_position,
-        )
+        # Object linear velocity - commented out
+        # object_velocity = ObsTerm(
+        #     func=mdp.get_object_linear_velocity,
+        #     noise=Unoise(n_min=-0.001, n_max=0.001),
+        # )
+
+        # Target position for cube placement - commented out
+        # target_position = ObsTerm(
+        #     func=mdp.get_target_position,
+        # )
 
         def __post_init__(self) -> None:
             self.enable_corruption = True
@@ -171,39 +171,33 @@ class EventCfg:
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # Reaching the object
-    object_reached = RewTerm(
-        func=mdp.object_reached_reward,
-        func_kwargs={"object_cfg": SceneEntityCfg("cube")},
-        weight=1.0,
-    )
+    # Reaching the object - commented out until cube is added
+    # object_reached = RewTerm(
+    #     func=mdp.object_reached_reward,
+    #     func_kwargs={"object_cfg": SceneEntityCfg("cube")},
+    #     weight=1.0,
+    # )
 
-    # Grasping the object
-    object_grasped = RewTerm(
-        func=mdp.object_grasped_reward,
-        weight=2.0,
-    )
+    # Grasping the object - commented out until gripper is added
+    # object_grasped = RewTerm(
+    #     func=mdp.object_grasped_reward,
+    #     weight=2.0,
+    # )
 
-    # Placing object at target location
-    object_placed = RewTerm(
-        func=mdp.object_placement_reward,
-        func_kwargs={
-            "object_cfg": SceneEntityCfg("cube"),
-            "target_pos": (0.5, 0.5, 1.1),  # Target location on table
-        },
-        weight=3.0,
-    )
+    # Placing object at target location - commented out until cube is added
+    # object_placed = RewTerm(
+    #     func=mdp.object_placement_reward,
+    #     func_kwargs={
+    #         "object_cfg": SceneEntityCfg("cube"),
+    #         "target_pos": (0.5, 0.5, 1.1),  # Target location on table
+    #     },
+    #     weight=3.0,
+    # )
 
-    # Smooth actions (penalty)
+    # Smooth actions (penalty) - using action_rate_l2 which is available in isaaclab
     action_smoothness = RewTerm(
-        func=mdp.action_smoothness_penalty,
-        weight=0.1,
-    )
-
-    # Joint velocity penalty (energy efficiency)
-    joint_velocity = RewTerm(
-        func=mdp.joint_velocity_penalty,
-        weight=0.01,
+        func=mdp_isaac.action_rate_l2,
+        weight=-0.01,
     )
 
 
@@ -213,30 +207,30 @@ class TerminationsCfg:
 
     # Episode times out
     time_out = DoneTerm(
-        func=lambda env: torch.tensor(
-            env.episode_length_buf >= env.max_episode_length,
-            device=env.device,
-        ).unsqueeze(-1),
+        func=mdp_isaac.time_out,
         time_out=True,
     )
 
-    # Robot has fallen
-    robot_fallen = DoneTerm(
-        func=mdp.check_robot_fallen,
-        time_out=False,
-    )
+    # Robot has fallen (COM height too low) - Commented out for now
+    # base_height_l2 is a reward function, not a termination function
+    # TODO: Implement custom termination for robot fallen
+    # robot_fallen = DoneTerm(
+    #     func=mdp_isaac.base_height_l2,
+    #     params={"target_height": 0.3, "asset_cfg": SceneEntityCfg("robot")},
+    #     time_out=False,
+    # )
 
-    # Cube dropped too far
-    cube_dropped = DoneTerm(
-        func=mdp.check_cube_dropped_far,
-        time_out=False,
-    )
+    # Cube dropped too far - commented out until cube is added
+    # cube_dropped = DoneTerm(
+    #     func=mdp.check_cube_dropped_far,
+    #     time_out=False,
+    # )
 
-    # Cube out of bounds
-    cube_out_of_bounds = DoneTerm(
-        func=mdp.check_cube_out_of_bounds,
-        time_out=False,
-    )
+    # Cube out of bounds - commented out until cube is added
+    # cube_out_of_bounds = DoneTerm(
+    #     func=mdp.check_cube_out_of_bounds,
+    #     time_out=False,
+    # )
 
 
 @configclass
@@ -257,7 +251,11 @@ class FactoryTaskCfg(ManagerBasedRLEnvCfg):
 
     # Scene settings
     scene: SceneCfg = SceneCfg(num_envs=256, env_spacing=2.5)
-    viewer: ViewerCfg = ViewerCfg(eye=(1.0, -1.0, 0.5), origin_type="asset_root", asset_name="robot")
+    viewer: ViewerCfg = ViewerCfg(
+        eye=(2.0, 2.0, 2.0),  # Camera position: further back and elevated for better view
+        lookat=(0.0, 0.0, 0.5),  # Look at a point on the robot's center of mass
+        origin_type="world",  # Use world coordinates for camera positioning
+    )
     
     # MDP settings
     observations: ObservationsCfg = ObservationsCfg()

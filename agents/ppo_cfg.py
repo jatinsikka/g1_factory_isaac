@@ -10,11 +10,15 @@ class VanillaPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     max_iterations = 10_100 # video saves after (interval + 20) so give it some buffer
     save_interval = 1_000
-    experiment_name = "so101_test"
-    run_name = ""
+    experiment_name = "g1_factory_test"
+    run_name = "g1_factory_arm_control"  # Descriptive run name for WANDB
     logger = "wandb"
-    wandb_project = "SO101_Test"
+    wandb_project = "G1_Factory_Test"
     store_code_state = True
+    # Enable video logging to WANDB
+    log_video = True  # Record videos during training
+    video_interval = 1_000  # Record every 1000 iterations
+    video_length = 200  # 200 steps per video
     obs_groups = {
         "policy": ["policy"],
         "critic": ["policy"], # update for asymmetric actor-critic

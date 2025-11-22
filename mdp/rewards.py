@@ -9,7 +9,7 @@ for the factory manipulation task.
 
 import torch
 from isaaclab.assets import Articulation
-from isaaclab.managers import CommandsManager, SceneEntityCfg
+from isaaclab.managers import SceneEntityCfg
 from isaaclab.envs import ManagerBasedRLEnv
 
 
