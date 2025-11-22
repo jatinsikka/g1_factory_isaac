@@ -19,7 +19,8 @@ from isaaclab.app import AppLauncher
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Train G1 factory robot policy")
-parser.add_argument("--video", action="store_true", default=False, help="Record videos during training.")
+parser.add_argument("--video", action="store_true", default=True, help="Record videos during training.")
+parser.add_argument("--no-video", action="store_false", dest="video", help="Disable video recording.")
 parser.add_argument("--video_length", type=int, default=200, help="Length of the recorded video (in steps).")
 parser.add_argument("--video_interval", type=int, default=1000, help="Interval between video recordings (in steps).")
 parser.add_argument("--num_envs", type=int, default=None, help="Number of environments to simulate.")
@@ -32,11 +33,14 @@ parser.add_argument("--checkpoint", type=str, default=None, help="Checkpoint to 
 AppLauncher.add_app_launcher_args(parser)
 args_cli, hydra_args = parser.parse_known_args()
 
+# Store video recording flag before modifying for app launcher
+enable_video_recording = args_cli.video
+
 # always set headless and enable cameras for recording
 args_cli.headless = True
 if args_cli.video:
     args_cli.enable_cameras = True
-    args_cli.video = False
+    # Note: we keep args_cli.video = True to use in video wrapper later
 
 # suppress logs
 if not hasattr(args_cli, "kit_args"):
@@ -64,11 +68,48 @@ from isaaclab_rl.rsl_rl import RslRlVecEnvWrapper
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils import get_checkpoint_path
 
+try:
+    import wandb
+    WANDB_AVAILABLE = True
+except ImportError:
+    WANDB_AVAILABLE = False
+
 # Set torch backend optimization
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
+
+
+def upload_videos_to_wandb(video_dir: str):
+    """Upload recorded videos to WANDB.
+    
+    Args:
+        video_dir: Path to directory containing recorded videos
+    """
+    import glob
+    import pathlib
+    
+    if not os.path.exists(video_dir):
+        print(f"[WARNING] Video directory not found: {video_dir}")
+        return
+    
+    # Find all video files (mp4 format)
+    video_files = sorted(glob.glob(os.path.join(video_dir, "*.mp4")))
+    
+    if not video_files:
+        print(f"[INFO] No videos found in {video_dir}")
+        return
+    
+    print(f"[INFO] Found {len(video_files)} video(s) to upload")
+    
+    for video_file in video_files:
+        try:
+            video_name = pathlib.Path(video_file).stem
+            print(f"[INFO] Uploading video: {video_name}")
+            wandb.log({f"videos/{video_name}": wandb.Video(video_file)})
+        except Exception as e:
+            print(f"[WARNING] Failed to upload video {video_file}: {e}")
 
 
 def main():
@@ -94,6 +135,9 @@ def main():
     env_cfg = FactoryTaskCfg()
     if args_cli.num_envs is not None:
         env_cfg.scene.num_envs = args_cli.num_envs
+    # For video recording, reduce number of environments for better visibility
+    elif args_cli.video:
+        env_cfg.scene.num_envs = 1  # Use single environment for clearer video
     env_cfg.seed = args_cli.seed
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
     
@@ -115,7 +159,9 @@ def main():
     
     # Create Isaac environment
     print("[INFO] Creating environment...")
+    print(f"[INFO] Environment settings: num_envs={env_cfg.scene.num_envs}, render_mode={'rgb_array' if args_cli.video else None}")
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
+    print(f"[INFO] Environment created successfully. observation_space={env.observation_space}, action_space={env.action_space}")
     
     # Wrap for video recording if requested
     if args_cli.video:
@@ -126,6 +172,7 @@ def main():
             "disable_logger": True,
         }
         print("[INFO] Recording videos during training.")
+        print(f"[INFO] Video folder: {video_kwargs['video_folder']}")
         env = gym.wrappers.RecordVideo(env, **video_kwargs)
     
     # Wrap for RSL-RL
@@ -151,6 +198,11 @@ def main():
     # Run training
     print("[INFO] Starting training...")
     runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+    
+    # Upload recorded videos to WANDB if available
+    if args_cli.video and WANDB_AVAILABLE:
+        print("[INFO] Uploading videos to WANDB...")
+        upload_videos_to_wandb(os.path.join(log_dir, "videos", "train"))
     
     # Close the simulator
     env.close()
