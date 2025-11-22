@@ -39,13 +39,22 @@ def object_reached_reward(env: ManagerBasedRLEnv, object_cfg: SceneEntityCfg) ->
 def object_grasped_reward(env: ManagerBasedRLEnv) -> torch.Tensor:
     """Reward for successfully grasping object.
     
-    Returns 1.0 if object is grasped (contact detected), 0 otherwise.
+    Rewards when gripper is close to object (as proxy for grasping).
     """
-    # TODO: Implement contact detection logic
-    # This would require checking contact forces on gripper fingers
-    # For now, return placeholder
-    batch_size = env.unwrapped.num_envs
-    return torch.zeros(batch_size, device=env.device)
+    object_pos = env.scene["cube"].data.root_pos_w
+    robot = env.scene["robot"]
+    
+    # Get gripper position (last body is end-effector)
+    ee_pos = robot.data.body_pos_w[:, -1]
+    
+    # Distance to object
+    distance = torch.norm(ee_pos - object_pos, dim=-1)
+    
+    # Large reward when very close (grasping range, ~0.05m)
+    # Exponential with tighter threshold
+    reward = torch.exp(-15.0 * distance)
+    
+    return reward
 
 
 def object_placement_reward(

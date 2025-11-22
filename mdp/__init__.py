@@ -3,31 +3,48 @@
 
 """MDP definitions for G1 factory environment."""
 
-from .functions import (
-    # Reward functions
+# Import from submodules
+from .rewards import (
     object_reached_reward,
     object_grasped_reward,
     object_placement_reward,
     action_smoothness_penalty,
     joint_velocity_penalty,
-    # Observation functions
-    object_pose_obs,
-    robot_joint_obs,
-    gripper_state_obs,
-    # Action functions
-    arm_action_scale,
-    gripper_action_scale,
+)
+
+from .observations import (
+    get_robot_body_joint_states,
+    get_gripper_state,
+    get_object_relative_position,
+    get_object_linear_velocity,
+    get_object_position_world,
+    get_target_position,
+)
+
+from .terminations import (
+    check_cube_dropped_far,
+    check_cube_out_of_bounds,
+    check_robot_fallen,
+    check_success_reached,
 )
 
 __all__ = [
+    # Reward functions
     "object_reached_reward",
     "object_grasped_reward",
     "object_placement_reward",
     "action_smoothness_penalty",
     "joint_velocity_penalty",
-    "object_pose_obs",
-    "robot_joint_obs",
-    "gripper_state_obs",
-    "arm_action_scale",
-    "gripper_action_scale",
+    # Observation functions
+    "get_robot_body_joint_states",
+    "get_gripper_state",
+    "get_object_relative_position",
+    "get_object_linear_velocity",
+    "get_object_position_world",
+    "get_target_position",
+    # Termination functions
+    "check_cube_dropped_far",
+    "check_cube_out_of_bounds",
+    "check_robot_fallen",
+    "check_success_reached",
 ]

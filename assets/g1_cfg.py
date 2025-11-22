@@ -10,11 +10,15 @@ References:
     https://github.com/unitreerobotics/unitree_sim_isaaclab
 """
 
+from pathlib import Path
 from isaaclab.assets import ArticulationCfg
+from isaaclab.actuators import ImplicitActuatorCfg
 import isaaclab.sim as sim_utils
 from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
+# Get the directory of this file to locate assets
+ASSETS_DIR = Path(__file__).parent
 
 ##
 # G1 Robot Configuration
@@ -22,13 +26,12 @@ from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR
 
 G1_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/robot",
-    # TODO: Update with actual G1 URDF path from Unitree repo
-    # For now using placeholder - you'll need to:
-    # 1. Download G1 URDF from Unitree repo
-    # 2. Convert to USD if needed
-    # 3. Point to correct location
-    spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{ISAAC_NUCLEUS_DIR}/Robots/Humanoids/G1/g1.usd",
+    spawn=sim_utils.UrdfFileCfg(
+        asset_path=str(ASSETS_DIR / "g1.urdf"),
+        fix_base=False,
+        merge_fixed_joints=False,
+        make_instanceable=True,
+        link_density=1.0e-8,
         activate_contact_sensors=True,
         self_collision=True,
         rigid_props=sim_utils.RigidBodyPropertiesCfg(
@@ -38,78 +41,47 @@ G1_CFG = ArticulationCfg(
             angular_damping=0.0,
             max_linear_velocity=1000.0,
             max_angular_velocity=1000.0,
-            max_depenetration_velocity=5.0,
-            contact_offset=0.02,
-            rest_offset=0.001,
+            max_depenetration_velocity=1.0,
         ),
         articulation_props=sim_utils.ArticulationRootPropertiesCfg(
             enabled_self_collisions=True,
             solver_position_iteration_count=4,
             solver_velocity_iteration_count=0,
-            sleep_threshold=0.005,
-            stabilization_threshold=0.001,
         ),
     ),
     init_state=ArticulationCfg.InitialStateCfg(
-        pos=(0.0, 0.0, 1.0),  # Spawn height ~1m (humanoid standing)
+        pos=(0.0, 0.0, 0.5),  # Spawn height suitable for humanoid
         rot=(1.0, 0.0, 0.0, 0.0),  # Identity rotation (quaternion)
         lin_vel=(0.0, 0.0, 0.0),
         ang_vel=(0.0, 0.0, 0.0),
-        # TODO: Set initial joint positions if needed
-        # joint_pos: Default is all zeros (T-pose)
-        # joint_vel: Default is all zeros (at rest)
     ),
     actuators={
-        # Arm actuator configuration
-        "arm_left": sim_utils.ImplicitActuatorCfg(
-            joint_names_expr=["l_.*_joint"],  # Left arm joints regex
-            effort_limit=300.0,
-            velocity_limit=2.0,
-            stiffness=80.0,
-            damping=4.0,
-        ),
-        "arm_right": sim_utils.ImplicitActuatorCfg(
-            joint_names_expr=["r_.*_joint"],  # Right arm joints regex
-            effort_limit=300.0,
-            velocity_limit=2.0,
-            stiffness=80.0,
-            damping=4.0,
-        ),
-        # Base/locomotion actuator (if using mobile base)
-        "base": sim_utils.ImplicitActuatorCfg(
-            joint_names_expr=[".*_hip.*", ".*_knee.*", ".*_ankle.*"],  # Leg joints
-            effort_limit=500.0,
-            velocity_limit=3.0,
-            stiffness=100.0,
-            damping=10.0,
+        "default": ImplicitActuatorCfg(
+            joint_names_expr=[".*"],
+            effort_limit_sim=100.0,
+            velocity_limit_sim=3.0,
+            stiffness=10.0,
+            damping=1.0,
+            armature=0.01,
         ),
     },
 )
+"""Configuration of G1 humanoid robot using implicit actuator model."""
 
 
 ##
-# Gripper Configuration (Dex1 - Two-finger gripper)
+# Gripper Configuration - Using a simple two-finger gripper from Isaac Nucleus
 ##
 
 G1_GRIPPER_CFG = ArticulationCfg(
     prim_path="{ENV_REGEX_NS}/gripper",
     spawn=sim_utils.UsdFileCfg(
-        usd_path=f"{ISAAC_NUCLEUS_DIR}/Robots/Hands/Dex1/dex1.usd",
+        usd_path=f"{ISAAC_NUCLEUS_DIR}/Robots/Grippers/Robotiq/2f_140/collision/2f_140.usd",
         activate_contact_sensors=True,
-        self_collision=True,
     ),
     init_state=ArticulationCfg.InitialStateCfg(
         pos=(0.0, 0.0, 0.0),  # Attached to robot end-effector
     ),
-    actuators={
-        "gripper": sim_utils.ImplicitActuatorCfg(
-            joint_names_expr=[".*gripper.*"],
-            effort_limit=200.0,
-            velocity_limit=5.0,
-            stiffness=40.0,
-            damping=2.0,
-        ),
-    },
 )
 
 

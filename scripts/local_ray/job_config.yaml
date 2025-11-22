@@ -15,7 +15,6 @@ user_id: js233274
 ext_dir: /mnt/c/Users/sikka/Documents/2025_IMP/Courses/Fall_25/HCR/HW4/Project/g1_factory_isaac/scripts
 
 # Train script to execute on cluster
-# : Update path after implementing train.py
 python_script: "/workspace/isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/g1_factory/scripts/train.py"
 
 # Additional dependencies to mount at runtime

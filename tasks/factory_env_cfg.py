@@ -110,22 +110,33 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # Robot joint state (positions and velocities)
-        joint_pos = ObsTerm(
-            func=mdp.robot_joint_obs,
+        # Robot joint states (positions and velocities for all 29 DOFs)
+        joint_states = ObsTerm(
+            func=mdp.get_robot_body_joint_states,
+            noise=Unoise(n_min=-0.01, n_max=0.01),
+        )
+
+        # Gripper state (positions and velocities for all gripper joints)
+        gripper_state = ObsTerm(
+            func=mdp.get_gripper_state,
             noise=Unoise(n_min=-0.01, n_max=0.01),
         )
 
         # Object position relative to gripper
-        object_pose = ObsTerm(
-            func=mdp.object_pose_obs,
-            func_kwargs={"object_cfg": SceneEntityCfg("cube")},
+        object_relative_pos = ObsTerm(
+            func=mdp.get_object_relative_position,
             noise=Unoise(n_min=-0.001, n_max=0.001),
         )
 
-        # Gripper state (open/close position and velocity)
-        gripper_state = ObsTerm(
-            func=mdp.gripper_state_obs,
+        # Object linear velocity
+        object_velocity = ObsTerm(
+            func=mdp.get_object_linear_velocity,
+            noise=Unoise(n_min=-0.001, n_max=0.001),
+        )
+
+        # Target position for cube placement
+        target_position = ObsTerm(
+            func=mdp.get_target_position,
         )
 
         def __post_init__(self) -> None:
@@ -209,10 +220,23 @@ class TerminationsCfg:
         time_out=True,
     )
 
-    # TODO: Add additional termination conditions
-    # Examples:
-    # - robot_falls = DoneTerm(func=mdp.robot_fallen, ...)
-    # - object_dropped = DoneTerm(func=mdp.object_dropped_far, ...)
+    # Robot has fallen
+    robot_fallen = DoneTerm(
+        func=mdp.check_robot_fallen,
+        time_out=False,
+    )
+
+    # Cube dropped too far
+    cube_dropped = DoneTerm(
+        func=mdp.check_cube_dropped_far,
+        time_out=False,
+    )
+
+    # Cube out of bounds
+    cube_out_of_bounds = DoneTerm(
+        func=mdp.check_cube_out_of_bounds,
+        time_out=False,
+    )
 
 
 @configclass

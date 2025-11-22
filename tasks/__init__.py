@@ -3,5 +3,6 @@
 
 """Task configurations for G1 factory environment."""
 
-# TODO: Import task configurations
-# from .factory_task_cfg import FactoryTaskCfg
+from .factory_env_cfg import FactoryTaskCfg
+
+__all__ = ["FactoryTaskCfg"]

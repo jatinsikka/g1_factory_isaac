@@ -3,5 +3,9 @@
 
 """Agent configurations for G1 factory environment."""
 
-# TODO: Import PPO runner configuration
-# from .ppo_cfg import PPORunnerCfg
+from .ppo_cfg import VanillaPPORunnerCfg
+
+# Alias for convenience
+PPORunnerCfg = VanillaPPORunnerCfg
+
+__all__ = ["VanillaPPORunnerCfg", "PPORunnerCfg"]
